@@ -6,7 +6,7 @@ import streamlit as st
 
 # Function to fetch news
 def get_top_headlines(api_key, category=None, country=None, language="en"):
-    base_url = "https://newsapi.org/v2/top-headlines"
+    base_url = "https://newsapi.org/v2/everything"
     params = {
         "apiKey": api_key,
         "language": language,
