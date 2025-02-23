@@ -2,23 +2,15 @@ import requests
 import json
 import datetime
 import pandas as pd #optional
+import streamlit as st
 
+# Function to fetch news
 def get_top_headlines(api_key, category=None, country=None, language="en"):
-    """
-    Fetches top headlines from NewsAPI.org.
-    Args:
-        api_key: Your NewsAPI.org API key.
-        category: News category (e.g., "world", "business", "technology"). Optional.
-        country: Country code (e.g., "us", "gb"). Optional.
-        language: Language code (e.g., "en", "es"). Defaults to "en".
-    Returns:
-        A list of dictionaries representing the articles, or None if an error occurs.
-    """
     base_url = "https://newsapi.org/v2/top-headlines"
     params = {
         "apiKey": api_key,
         "language": language,
-        "pageSize": 100  # Maximum allowed by NewsAPI
+        "pageSize": 10
     }
 
     if category:
@@ -28,36 +20,45 @@ def get_top_headlines(api_key, category=None, country=None, language="en"):
 
     try:
         response = requests.get(base_url, params=params)
-        print("Request URL:", response.url)  # Debugging output
         response.raise_for_status()
         data = response.json()
-        print("Response Data:", data)  # Debugging output
-
         if data["status"] == "ok":
             return data["articles"]
         else:
-            print(f"NewsAPI error: {data['message']}")
+            st.error(f"NewsAPI error: {data['message']}")
             return None
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching data: {e}")
-        return None
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON: {e}")
+        st.error(f"Error fetching data: {e}")
         return None
 
-# Example usage:
-api_key = "573f2f6a79e642ac8d319f73939171ed"  # Replace with your API key
-category = "business"  # Choose a category or set to None
-country = "None"  # Choose a country code or set to None
+# Streamlit UI
+st.set_page_config(page_title="📰 News Dashboard", layout="wide")
+st.title("📰 Latest News Headlines")
 
-articles = get_top_headlines(api_key, category=category)
+api_key = st.text_input("Enter your NewsAPI Key", type="password")
 
-if articles:
-    for article in articles:
-        print(f"Title: {article['title']}")
-        print(f"Description: {article['description']}")
-        print(f"URL: {article['url']}")
-        print(f"Published At: {article['publishedAt']}")
-        print("-" * 20)
-else:
-    print("Failed to retrieve news articles.")
+category = st.selectbox("Select Category", [None, "business", "technology", "sports", "entertainment"])
+country = st.selectbox("Select Country", [None, "us", "gb", "ca", "au"])
+
+if st.button("Fetch News"):
+    if api_key:
+        articles = get_top_headlines(api_key, category, country)
+
+        if articles:
+            for article in articles:
+                st.markdown(
+                    f"""
+                    <div style="border:1px solid #ddd; padding:10px; border-radius:10px; margin-bottom:10px; background-color:#f9f9f9;">
+                        <h3 style="color:#333;">{article['title']}</h3>
+                        <p>{article['description']}</p>
+                        <a href="{article['url']}" target="_blank" style="color:blue; font-weight:bold;">Read more</a>
+                        <p style="font-size:12px; color:gray;">Published: {article['publishedAt']}</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+        else:
+            st.warning("No articles found.")
+    else:
+        st.warning("Please enter your API key.")
+
